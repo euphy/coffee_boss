@@ -64,9 +64,9 @@ void setup() {
   Serial.println(raw1kgOnly);
 
   float scaleValue = raw1kgOnly / 1000.0;
-  Serial.print("Setting scale to ");
+  Serial.print("Scale value calculated to be ");
   Serial.println(scaleValue);
-  scale.set_scale(scaleValue);
+  scale.set_scale(scaleValue); // works out at 22.06
 
 //  scale.set_scale(2280.f);                      // this value is obtained by calibrating the scale with known weights; see the README for details
   Serial.println("Take the weight off again");
