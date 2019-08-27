@@ -1,5 +1,8 @@
-
 void rtc_serialPrintTime(DateTime t) {
+  rtc_serialPrintTime(t, true);
+}
+
+void rtc_serialPrintTime(DateTime t, boolean endLine) {
   Serial.print(t.year(), DEC);
   Serial.print('/');
   Serial.print(t.month(), DEC);
@@ -11,5 +14,7 @@ void rtc_serialPrintTime(DateTime t) {
   Serial.print(t.minute(), DEC);
   Serial.print(':');
   Serial.print(t.second(), DEC);
-  Serial.println();
+  if (endLine) {
+    Serial.println();
+  }
 }

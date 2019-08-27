@@ -8,6 +8,11 @@
 // Clock setup. Doesn't mention pins because uses default 21/22 on ESP32.
 RTC_DS3231 rtc;
 
+// SD Card setup.
+#include <SPI.h>
+#include <SD.h>
+
+
 // HX711 circuit wiring
 const int LOADCELL_DOUT_PIN = 4;
 const int LOADCELL_SCK_PIN = 15;
@@ -19,6 +24,12 @@ long scaleReadInterval = 2000L;
 long scaleLastReadTime = 0L;
 
 boolean logScaleReadings = true;
+
+// SD card variables
+const int sdChipSelectPin = 25;
+File dataFile;
+boolean cardPresent = false;
+boolean cardInit = false;
 
 
 void setup() {
@@ -51,19 +62,41 @@ void setup() {
     Serial.println("Picked up time from RTC: ");
     rtc_serialPrintTime(rtc.now());
   }
+
+  sd_simpleInit();
+  
 }
 
-
+float currentWeight = 0.0;
+DateTime currentTime;
 
 void loop() {
   if (millis() > scaleLastReadTime + scaleReadInterval) {
     scale.power_up();
-    Serial.print("one reading:\t");
-    Serial.print(scale.get_units(), 1);
-    Serial.print("grams\t| average:\t");
-    Serial.print(scale.get_units(10), 1);
+    currentTime = rtc.now();
+    currentWeight = scale.get_units(10);
+    rtc_serialPrintTime(currentTime, false);
+    Serial.print("\t| average:\t");
+    Serial.print(currentWeight, 1);
     Serial.println("grams");
-    scale.get_units(10);
+
+    dataFile = SD.open("datalog.txt", FILE_WRITE);
+    dataFile.print(currentTime.year(), DEC);
+    dataFile.print('/');
+    dataFile.print(currentTime.month(), DEC);
+    dataFile.print('/');
+    dataFile.print(currentTime.day(), DEC);
+    dataFile.print(' ');
+    dataFile.print(currentTime.hour(), DEC);
+    dataFile.print(':');
+    dataFile.print(currentTime.minute(), DEC);
+    dataFile.print(':');
+    dataFile.print(currentTime.second(), DEC);
+    dataFile.print(',');
+    dataFile.print(currentWeight, 3);
+    dataFile.println();
+    dataFile.close();
+    
     scale.power_down();
     scaleLastReadTime = millis();
   }
