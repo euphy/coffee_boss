@@ -9,6 +9,7 @@
 RTC_DS3231 rtc;
 
 // SD Card setup.
+#include "FS.h"
 #include <SPI.h>
 #include <SD.h>
 
@@ -69,6 +70,7 @@ void setup() {
 
 float currentWeight = 0.0;
 DateTime currentTime;
+char todayFilename[17];
 
 void loop() {
   if (millis() > scaleLastReadTime + scaleReadInterval) {
@@ -80,23 +82,44 @@ void loop() {
     Serial.print(currentWeight, 1);
     Serial.println("grams");
 
-    dataFile = SD.open("datalog.txt", FILE_WRITE);
-    dataFile.print(currentTime.year(), DEC);
-    dataFile.print('/');
-    dataFile.print(currentTime.month(), DEC);
-    dataFile.print('/');
-    dataFile.print(currentTime.day(), DEC);
-    dataFile.print(' ');
-    dataFile.print(currentTime.hour(), DEC);
-    dataFile.print(':');
-    dataFile.print(currentTime.minute(), DEC);
-    dataFile.print(':');
-    dataFile.print(currentTime.second(), DEC);
-    dataFile.print(',');
-    dataFile.print(currentWeight, 3);
-    dataFile.println();
-    dataFile.close();
+    sprintf(todayFilename, "/data%04u%02u%02u.csv", currentTime.year(),currentTime.month(),currentTime.day());
     
+    dataFile = SD.open(todayFilename);
+
+    if (dataFile) {
+      dataFile.print(currentTime.year(), DEC);
+      dataFile.print('-');
+      dataFile.print(currentTime.month(), DEC);
+      dataFile.print('-');
+      dataFile.print(currentTime.day(), DEC);
+      dataFile.print('T');
+      dataFile.print(currentTime.hour(), DEC);
+      dataFile.print(':');
+      dataFile.print(currentTime.minute(), DEC);
+      dataFile.print(':');
+      dataFile.print(currentTime.second(), DEC);
+      dataFile.print(',');
+
+      dataFile.print(currentWeight, 3);
+      dataFile.println();
+      dataFile.close();
+    } 
+    else {
+      Serial.println("Couldn't find file, creating it.");
+      dataFile = SD.open(todayFilename, FILE_WRITE);
+      if (dataFile) {
+        Serial.print("Creating ");
+        Serial.println(todayFilename);
+        dataFile.println("timestamp, weight");
+        dataFile.close();
+      }
+      else {
+        Serial.print("Problem creating file ");
+        Serial.println(todayFilename);
+      }
+      
+    }
+        
     scale.power_down();
     scaleLastReadTime = millis();
   }
