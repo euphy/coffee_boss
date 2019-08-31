@@ -75,3 +75,107 @@ void sd_printDirectory(File dir, int numTabs)
      entry.close();
    }
 }
+
+void sd_logRegularValue() {
+
+  if (millis() > regularLogLastTime + regularLogInterval) {
+  
+    regularDataFile = SD.open(todayFilenameRegular, FILE_APPEND);
+
+    if (regularDataFile) {
+      Serial.print("Writing to ");
+      Serial.println(todayFilenameRegular);
+      
+      regularDataFile.print(dateString);
+      regularDataFile.print('T');
+      regularDataFile.print(timeString);
+      regularDataFile.print(',');
+      
+      regularDataFile.print(dateString);
+      regularDataFile.print(',');
+      
+      regularDataFile.print(timeString);
+      regularDataFile.print(',');
+
+      regularDataFile.println(lastMeasuredWeight);
+      regularDataFile.close();
+    }
+    else {
+      regularDataFile = SD.open(todayFilenameRegular, FILE_WRITE);
+      if (regularDataFile) {
+        Serial.print("Creating ");
+        Serial.println(todayFilenameRegular);
+        regularDataFile.println("date, time, weight");
+        regularDataFile.close();
+      }
+      else {
+        Serial.print("Problem creating file: ");
+        Serial.println(todayFilenameRegular);
+      }
+    }
+  }  
+}
+
+void sd_logChangeValue() {
+
+  if (abs(lastMeasuredWeight - lastSettledWeight) > changeThreshold) {
+    Serial.print("Weight has changed from ");
+    Serial.print(lastSettledWeight);
+    Serial.print(" to ");
+    Serial.print(lastMeasuredWeight);
+    Serial.print(" so I'll log it in ");
+    Serial.println(todayFilenameChange);
+    // log the change
+    lastSettledWeight = lastMeasuredWeight;
+    changeDataFile = SD.open(todayFilenameChange, FILE_APPEND);
+    if (changeDataFile) {
+      Serial.print("Writing to ");
+      Serial.println(todayFilenameChange);
+      
+      changeDataFile.print(dateString);
+      changeDataFile.print('T');
+      changeDataFile.print(timeString);
+      changeDataFile.print(',');
+
+      changeDataFile.print(dateString);
+      changeDataFile.print(',');
+      
+      changeDataFile.print(timeString);
+      changeDataFile.print(',');
+  
+      changeDataFile.println(lastMeasuredWeight);
+      changeDataFile.close();
+    }
+    else {
+      changeDataFile = SD.open(todayFilenameChange, FILE_WRITE);
+      if (changeDataFile) {
+        Serial.print("Creating ");
+        Serial.println(todayFilenameChange);
+        changeDataFile.println("date, time, weight");
+        changeDataFile.close();
+      }
+      else {
+        Serial.print("Problem creating file: ");
+        Serial.println(todayFilenameChange);
+      }
+    }  
+  }
+}
+
+void sd_prepareFilenames() {
+  
+  sprintf(todayFilenameRegular, "/datr%04u%02u%02u.csv", currentTime.year(), currentTime.month(), currentTime.day());
+  sprintf(todayFilenameChange, "/datc%04u%02u%02u.csv", currentTime.year(), currentTime.month(), currentTime.day());
+  sprintf(dateString, "%04u-%02u-%02u", currentTime.year(), currentTime.month(), currentTime.day());
+  sprintf(timeString, "%02u:%02u:%02u", currentTime.hour(), currentTime.minute(), currentTime.second());
+
+  Serial.print("todayFilenameRegular: ");
+  Serial.println(todayFilenameRegular);
+  Serial.print("todayFilenameChange: ");
+  Serial.println(todayFilenameChange);
+  Serial.print("dateString: ");
+  Serial.println(dateString);
+  Serial.print("timeString: ");
+  Serial.println(timeString);
+
+}

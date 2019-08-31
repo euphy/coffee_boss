@@ -22,14 +22,19 @@ HX711 scale;
 
 float scaleUnitValue = 22.062;
 
-long scaleReadInterval = 2000L;
+long scaleReadInterval = 100L;
 long scaleLastReadTime = 0L;
+long regularLogInterval = 2000L;
+long regularLogLastTime = 0L;
 
 boolean logScaleReadings = true;
+boolean logRegularReadings = true;
+boolean logChangeReadings = true;
 
 // SD card variables
 const int sdChipSelectPin = 25;
-File dataFile;
+File regularDataFile;
+File changeDataFile;
 boolean cardPresent = false;
 boolean cardInit = false;
 
@@ -49,7 +54,7 @@ boolean recalibrateTouchScreen = false;
 
 void setup() {
   Serial.begin(57600);
-  Serial.println("\nCoffee Boss is going to BOSS your COFFEE.");
+  Serial.println("\n\n\nCoffee Boss is going to BOSS your COFFEE.");
 
   lcd_init();
   // This is the file name used to store the touch coordinate
@@ -84,71 +89,66 @@ void setup() {
   }
 
   sd_simpleInit();
-  
+
+//  testMeasurementSpeed();
+//  testMeasurementSpeed();
+//  testMeasurementSpeed();
 }
 
-float currentWeight = 0.0;
+float changeThreshold = 50; // change must be more than this to trigger an event
+float lastMeasuredWeight = 0.0;
+float lastSettledWeight = 0.0;
 DateTime currentTime;
-char todayFilename[18];
+char todayFilenameRegular[18];
+char todayFilenameChange[18];
 char dateString[11];
 char timeString[9];
 
 void loop() {
+  
   if (millis() > scaleLastReadTime + scaleReadInterval) {
-    scale.power_up();
+
     currentTime = rtc.now();
-    currentWeight = scale.get_units(10);
-    lcd_displayWeight(currentWeight);
+    lastMeasuredWeight = scale.get_units(1);
     rtc_serialPrintTime(currentTime, false);
     Serial.print("\t| average:\t");
-    Serial.print(currentWeight, 1);
+    Serial.print(lastMeasuredWeight, 1);
     Serial.println("grams");
 
-    sprintf(todayFilename, "/data%04u%02u%02u.csv", currentTime.year(), currentTime.month(), currentTime.day());
-    sprintf(dateString, "%04u-%02u-%02u", currentTime.year(), currentTime.month(), currentTime.day());
-    sprintf(timeString, "%02u:%02u:%02u", currentTime.hour(), currentTime.minute(), currentTime.second());
+    sd_prepareFilenames();
 
-    Serial.print("todayFilename: ");
-    Serial.println(todayFilename);
-    Serial.print("dateString: ");
-    Serial.println(dateString);
-    Serial.print("timeString: ");
-    Serial.println(timeString);
-    
-    dataFile = SD.open(todayFilename, FILE_APPEND);
+    sd_logRegularValue();
+    sd_logChangeValue();
 
-    if (dataFile) {
-      Serial.print("Writing to ");
-      Serial.println(todayFilename);
-      
-      dataFile.print(dateString);
-      dataFile.print(',');
-      
-      dataFile.print(timeString);
-      dataFile.print(',');
-
-      dataFile.println(currentWeight);
-      dataFile.close();
-    }
-    else {
-      Serial.print("Couldn't find file (");
-      Serial.print(todayFilename);
-      Serial.println("), creating it.");
-      dataFile = SD.open(todayFilename, FILE_WRITE);
-      if (dataFile) {
-        Serial.print("Creating ");
-        Serial.println(todayFilename);
-        dataFile.println("timestamp, weight");
-        dataFile.close();
-      }
-      else {
-        Serial.print("Problem creating file: ");
-        Serial.println(todayFilename);
-      }
-      
-    }
-        
-    scale.power_down();
     scaleLastReadTime = millis();
+    lcd_displayWeight(lastMeasuredWeight);
   }
+}
+
+void testMeasurementSpeed() {
+  /*
+   * Power up and down reliably takes 0ms.
+   * Reading getUnits takes different times
+   * 1  - 398ms
+   * 10 - 1204ms (120ms each)
+   * 50 - 4788ms (95ms each)
+   */
+  long before = millis();
+  scale.power_up();
+  long afterPowerUp = millis();
+  scale.get_units(10);
+  long afterGetUnits = millis();
+  scale.power_down();
+  long afterPowerDown = millis();
+
+  Serial.print("Power up: ");
+  Serial.print(afterPowerUp - before);
+  Serial.print(", measure: ");
+  Serial.print(afterGetUnits - afterPowerUp);
+  Serial.print(", power down: ");
+  Serial.println(afterPowerDown - afterGetUnits);
+  Serial.print("Took ");
+  Serial.print(afterPowerDown - before);
+  Serial.println("ms in total");
+
 }
