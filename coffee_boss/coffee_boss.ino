@@ -1,5 +1,7 @@
 // This is for the ADC that the scale attaches to.
 #include "HX711.h"
+#include <RingBuf.h> // for filtering weight values
+#include "MedianFilterLib.h"
 
 // For i2s realtime clock
 #include <Wire.h> 
@@ -15,10 +17,13 @@ RTC_DS3231 rtc;
 #include <SD.h>
 #include <TFT_eSPI.h> // Hardware-specific library
 
+
 // HX711 circuit wiring
 const int LOADCELL_DOUT_PIN = 4;
 const int LOADCELL_SCK_PIN = 15;
 HX711 scale;
+
+MedianFilter<float> medianFilter(20);
 
 float scaleUnitValue = 22.062;
 
@@ -51,6 +56,16 @@ TFT_eSPI lcd = TFT_eSPI();       // Invoke custom library
 // Repeat calibration if you change the screen rotation.
 boolean recalibrateTouchScreen = false;
 
+
+float changeThreshold = 30; // change must be more than this to trigger an event
+float lastMeasuredWeight = 0.0;
+float lastSettledWeight = 0.0;
+float filteredWeight = 0.0;
+DateTime currentTime;
+char todayFilenameRegular[18];
+char todayFilenameChange[18];
+char dateString[11];
+char timeString[9];
 
 void setup() {
   Serial.begin(57600);
@@ -95,14 +110,6 @@ void setup() {
 //  testMeasurementSpeed();
 }
 
-float changeThreshold = 50; // change must be more than this to trigger an event
-float lastMeasuredWeight = 0.0;
-float lastSettledWeight = 0.0;
-DateTime currentTime;
-char todayFilenameRegular[18];
-char todayFilenameChange[18];
-char dateString[11];
-char timeString[9];
 
 void loop() {
   
@@ -110,10 +117,16 @@ void loop() {
 
     currentTime = rtc.now();
     lastMeasuredWeight = scale.get_units(1);
+    filteredWeight = medianFilter.AddValue(lastMeasuredWeight);
+    
     rtc_serialPrintTime(currentTime, false);
-    Serial.print("\t| average:\t");
+    Serial.print(millis());
+    Serial.print("\t| measured:\t");
     Serial.print(lastMeasuredWeight, 1);
-    Serial.println("grams");
+    Serial.print("g\t| filtered:\t");
+    Serial.print(filteredWeight);
+    Serial.println("g");
+    lastMeasuredWeight = filteredWeight;
 
     sd_prepareFilenames();
 
@@ -125,18 +138,21 @@ void loop() {
   }
 }
 
+
 void testMeasurementSpeed() {
   /*
    * Power up and down reliably takes 0ms.
    * Reading getUnits takes different times
-   * 1  - 398ms
-   * 10 - 1204ms (120ms each)
-   * 50 - 4788ms (95ms each)
+   * 1   - 398ms
+   * 5   - 757ms (151ms each)
+   * 10  - 1204ms (120ms each)
+   * 50  - 4788ms (95ms each)
+   * 100 - 9273ms (93ms each)
    */
   long before = millis();
   scale.power_up();
   long afterPowerUp = millis();
-  scale.get_units(10);
+  scale.get_units(100);
   long afterGetUnits = millis();
   scale.power_down();
   long afterPowerDown = millis();

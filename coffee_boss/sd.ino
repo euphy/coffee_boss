@@ -113,6 +113,7 @@ void sd_logRegularValue() {
         Serial.println(todayFilenameRegular);
       }
     }
+    regularLogLastTime = millis();
   }  
 }
 
@@ -169,13 +170,14 @@ void sd_prepareFilenames() {
   sprintf(dateString, "%04u-%02u-%02u", currentTime.year(), currentTime.month(), currentTime.day());
   sprintf(timeString, "%02u:%02u:%02u", currentTime.hour(), currentTime.minute(), currentTime.second());
 
-  Serial.print("todayFilenameRegular: ");
-  Serial.println(todayFilenameRegular);
-  Serial.print("todayFilenameChange: ");
-  Serial.println(todayFilenameChange);
-  Serial.print("dateString: ");
-  Serial.println(dateString);
-  Serial.print("timeString: ");
-  Serial.println(timeString);
+//  Serial.print("todayFilenameRegular: ");
+//  Serial.println(todayFilenameRegular);
+//  Serial.print("todayFilenameChange: ");
+//  Serial.println(todayFilenameChange);
+//  Serial.print("dateString: ");
+//  Serial.println(dateString);
+//  Serial.print("timeString: ");
+//  Serial.println(timeString);
+//  Serial.print(".");
 
 }
