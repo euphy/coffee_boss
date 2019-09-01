@@ -119,15 +119,15 @@ void sd_logRegularValue() {
 
 void sd_logChangeValue() {
 
-  if (abs(lastMeasuredWeight - lastSettledWeight) > changeThreshold) {
+  if (abs(lastFilteredWeight - lastSettledWeight) > changeThreshold) {
     Serial.print("Weight has changed from ");
     Serial.print(lastSettledWeight);
     Serial.print(" to ");
-    Serial.print(lastMeasuredWeight);
+    Serial.print(lastFilteredWeight);
     Serial.print(" so I'll log it in ");
     Serial.println(todayFilenameChange);
     // log the change
-    lastSettledWeight = lastMeasuredWeight;
+    lastSettledWeight = lastFilteredWeight;
     changeDataFile = SD.open(todayFilenameChange, FILE_APPEND);
     if (changeDataFile) {
       Serial.print("Writing to ");

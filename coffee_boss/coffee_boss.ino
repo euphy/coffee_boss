@@ -2,6 +2,7 @@
 #include "HX711.h"
 #include <RingBuf.h> // for filtering weight values
 #include "MedianFilterLib.h"
+#include <RunningMedian.h>
 
 // For i2s realtime clock
 #include <Wire.h> 
@@ -23,7 +24,8 @@ const int LOADCELL_DOUT_PIN = 4;
 const int LOADCELL_SCK_PIN = 15;
 HX711 scale;
 
-MedianFilter<float> medianFilter(8);
+MedianFilter<float> medianFilteredWeight(8);
+MedianFilter<int> medianFilterInterval(6);
 
 float scaleUnitValue = 22.062;
 
@@ -60,7 +62,11 @@ boolean recalibrateTouchScreen = false;
 float changeThreshold = 30; // change must be more than this to trigger an event
 float lastMeasuredWeight = 0.0;
 float lastSettledWeight = 0.0;
+float lastFilteredWeight = 0.0;
+float lastDisplayedWeight = 0.0;
 float filteredWeight = 0.0;
+long measurementInterval = 0L;
+
 DateTime currentTime;
 char todayFilenameRegular[18];
 char todayFilenameChange[18];
@@ -114,10 +120,13 @@ void setup() {
 void loop() {
   
   if (millis() > scaleLastReadTime + scaleReadInterval) {
-
     currentTime = rtc.now();
     lastMeasuredWeight = scale.get_units(1);
-    filteredWeight = medianFilter.AddValue(lastMeasuredWeight);
+    
+    lastFilteredWeight = filteredWeight;
+    filteredWeight = medianFilteredWeight.AddValue(lastMeasuredWeight);
+    
+    measurementInterval = medianFilterInterval.AddValue(millis() - scaleLastReadTime);
     
     rtc_serialPrintTime(currentTime, false);
     Serial.print(millis());
@@ -126,15 +135,16 @@ void loop() {
     Serial.print("g\t| filtered:\t");
     Serial.print(filteredWeight);
     Serial.println("g");
-    lastMeasuredWeight = filteredWeight;
-
     sd_prepareFilenames();
 
     sd_logRegularValue();
     sd_logChangeValue();
 
+    lcd_updateDisplay();    
     scaleLastReadTime = millis();
-    lcd_displayWeight(lastMeasuredWeight);
+    if ((int)filteredWeight != (int)lastFilteredWeight) {
+      lastMeasuredWeight = filteredWeight;
+    }
   }
 }
 
