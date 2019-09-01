@@ -1,8 +1,6 @@
 // This is for the ADC that the scale attaches to.
 #include "HX711.h"
-#include <RingBuf.h> // for filtering weight values
-#include "MedianFilterLib.h"
-#include <RunningMedian.h>
+#include <RunningMedian.h> // https://github.com/RobTillaart/Arduino/tree/master/libraries/RunningMedian
 
 // For i2s realtime clock
 #include <Wire.h> 
@@ -24,8 +22,8 @@ const int LOADCELL_DOUT_PIN = 4;
 const int LOADCELL_SCK_PIN = 15;
 HX711 scale;
 
-MedianFilter<float> medianFilteredWeight(8);
-MedianFilter<int> medianFilterInterval(6);
+RunningMedian medianFilteredWeight(8);
+RunningMedian medianFilterInterval(6);
 
 float scaleUnitValue = 22.062;
 
@@ -62,10 +60,10 @@ boolean recalibrateTouchScreen = false;
 float changeThreshold = 30; // change must be more than this to trigger an event
 float lastMeasuredWeight = 0.0;
 float lastSettledWeight = 0.0;
-float lastFilteredWeight = 0.0;
-float lastDisplayedWeight = 0.0;
-float filteredWeight = 0.0;
-long measurementInterval = 0L;
+int lastFilteredWeight = 0;
+int lastDisplayedWeight = 0;
+int filteredWeight = 0;
+int measurementInterval = 0;
 
 DateTime currentTime;
 char todayFilenameRegular[18];
@@ -124,9 +122,11 @@ void loop() {
     lastMeasuredWeight = scale.get_units(1);
     
     lastFilteredWeight = filteredWeight;
-    filteredWeight = medianFilteredWeight.AddValue(lastMeasuredWeight);
+    medianFilteredWeight.add((int)lastMeasuredWeight);
+    filteredWeight = medianFilteredWeight.getMedian();
     
-    measurementInterval = medianFilterInterval.AddValue(millis() - scaleLastReadTime);
+    medianFilterInterval.add(millis() - scaleLastReadTime);
+    measurementInterval = medianFilterInterval.getMedian();
     
     rtc_serialPrintTime(currentTime, false);
     Serial.print(millis());
