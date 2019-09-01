@@ -23,7 +23,7 @@ const int LOADCELL_DOUT_PIN = 4;
 const int LOADCELL_SCK_PIN = 15;
 HX711 scale;
 
-MedianFilter<float> medianFilter(20);
+MedianFilter<float> medianFilter(8);
 
 float scaleUnitValue = 22.062;
 
