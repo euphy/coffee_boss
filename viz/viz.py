@@ -1,14 +1,17 @@
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import numpy as np
 from pandas import read_csv
 import pandas as pd
-from matplotlib import pyplot
+from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
 
 column_names = ['datestamp', 'date', 'time', 'weight']
-df = read_csv('../output/datr20190926.csv', names=column_names)
+df = read_csv('../output/datr20190923.csv', names=column_names)
 small_window = {'name': 'rolling4', 'size': 4}
 large_window = {'name': 'rolling36', 'size': 36}
 events = 'events'
+
 
 df[small_window['name']] = df['weight'].rolling(small_window['size']).median()
 df[large_window['name']] = df['weight'].rolling(large_window['size']).median()
@@ -17,9 +20,15 @@ df[large_window['name']] = df['weight'].rolling(large_window['size']).median()
 # that looks for large changes that might be interesting.
 
 df['pct_change'] = df[large_window['name']].pct_change()
-df.plot(x='time', y=[large_window['name'], 'pct_change'], secondary_y=['pct_change'])
-
 df.set_index('time')
+
+# Type hinting. Not sure if this is kosher or not.
+fig1: Figure
+ax: Axes
+fig1, ax = plt.subplots()
+df.plot(x='time', y=[large_window['name'], small_window['name']], ax=ax)
+fig2 = ax.twinx()
+df.plot(x='time', y='pct_change', ax=ax)
 
 
 #  pretty printing
@@ -35,8 +44,9 @@ for i in range(0, no_of_ticks):
     indices.append(position)
     tick_labels.append(df['time'][position])
 
-pyplot.grid(True, which='major')
-pyplot.xticks(labels=tick_labels, ticks=indices, rotation='vertical')
+ax.grid(True, which='major')
+ax.set_xticks(indices)
+ax.set_xticklabels(labels=tick_labels, rotation='vertical')
 
-pyplot.tight_layout()
-pyplot.show()
+plt.tight_layout()
+plt.show()
