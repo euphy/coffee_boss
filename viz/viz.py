@@ -31,25 +31,34 @@ print(df)
 # produce a series, based on the results of the large_window median filter,
 
 df['pct_change'] = df[small_window['name']].pct_change()
-df['diff'] = df[small_window['name']].diff(periods=1)
+df['diff'] = df[small_window['name']].diff(periods=8)
 
-threshold = 1200.0
+threshold = 600.0
 df['thresholded'] = (df['diff'] > threshold) * 1
-# that looks for large changes that might be interesting.
-# df['diff'] = df['diff'].apply(lambda x: [ if y > threshold else 0 for y in x])
-df['high_points'] = df['diff'] > threshold
-df['high_points'] = df['high_points'].astype(float)
+
 
 print(df.info())
 
 # Type hinting. Not sure if this is kosher or not.
 fig1: Figure
-ax: Axes
-fig1, ax = plt.subplots()
-# df.plot(x='datetime', y=[small_window['name'], 'high_points'], secondary_y=['high_points'], ax=ax)
-df.plot(x='datetime', y=['thresholded', 'diff', small_window['name'] ], secondary_y=['thresholded'], ax=ax)
-ax.grid(True, which='major')
+fig1, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, sharex='all')
 
+ax1.grid(b=True, which='major', color='#666666', linestyle='-')
+ax1.minorticks_on()
+ax1.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
+
+ax2.grid(b=True, which='major', color='#666666', linestyle='-')
+ax2.minorticks_on()
+ax2.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
+
+ax3.grid(b=True, which='major', color='#666666', linestyle='-')
+ax3.minorticks_on()
+ax3.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
+
+
+df.plot(x='datetime', y=[small_window['name'], 'thresholded'], secondary_y=['thresholded'], ax=ax1)
+df.plot(x='datetime', y=[small_window['name']], ax=ax2, figsize=(8, 8))
+df.plot(x='datetime', y=['diff'], ax=ax3)
 
 plt.tight_layout()
 plt.show()
