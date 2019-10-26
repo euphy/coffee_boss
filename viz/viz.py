@@ -33,8 +33,9 @@ print(df)
 df['pct_change'] = df[small_window['name']].pct_change()
 df['diff'] = df[small_window['name']].diff(periods=8)
 
-threshold = 600.0
+threshold = 300.0
 df['thresholded'] = (df['diff'] > threshold) * 1
+df['threshold'] = threshold # hacky workaround to get a horizontal line
 
 
 print(df.info())
@@ -54,11 +55,13 @@ ax2.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
 ax3.grid(b=True, which='major', color='#666666', linestyle='-')
 ax3.minorticks_on()
 ax3.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
-
+# ax3.axhline(xmin=0, xmax=3, linewidth=2, color='r') # Why won't this work?!
+# ax3.axvline(pd.to_datetime("2019-09-26T03:08:52"))
+print(df.at[55, 'datetime'])
 
 df.plot(x='datetime', y=[small_window['name'], 'thresholded'], secondary_y=['thresholded'], ax=ax1)
-df.plot(x='datetime', y=[small_window['name']], ax=ax2, figsize=(8, 8))
-df.plot(x='datetime', y=['diff'], ax=ax3)
+df.plot(x='datetime', y=[small_window['name']], ax=ax2, figsize=(8, 11))
+df.plot(x='datetime', y=['diff', 'threshold'], ax=ax3)
 
 plt.tight_layout()
 plt.show()
