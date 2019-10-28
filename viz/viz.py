@@ -44,7 +44,8 @@ print(df)
 
 # Type hinting. Not sure if this is kosher or not.
 fig1: Figure
-fig1, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, sharex='all')
+fig1, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, sharex='all', )
+fig1.set_size_inches(8, 11)
 
 ax1.grid(b=True, which='major', color='#666666', linestyle='-')
 ax1.minorticks_on()
@@ -57,11 +58,13 @@ ax2.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
 ax3.grid(b=True, which='major', color='#666666', linestyle='-')
 ax3.minorticks_on()
 ax3.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
-# ax3.axhline(threshold, linewidth=2, color='r') # Why won't this work?!
 
 df.plot(y=[small_window['name'], 'thresholded'], secondary_y=['thresholded'], ax=ax1)
-df.plot(y=[small_window['name']], ax=ax2, figsize=(8, 11))
+df.plot(y=[small_window['name']], ax=ax2)
 df.plot(y=['diff'], ax=ax3)
+
+# do this bit AFTER the plot
+ax3.axhline(threshold, linewidth=1, color='r')
 
 plt.tight_layout()
 plt.show()
