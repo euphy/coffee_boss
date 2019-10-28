@@ -35,17 +35,24 @@ print(df)
 
 df['pct_change'] = df[small_window['name']].pct_change()
 df['diff'] = df[small_window['name']].diff(periods=8)
+df['diff'] = df['diff'].shift(-8)
 
 threshold = 300.0
-df['thresholded'] = (df['diff'] > threshold) * 1
+df['thresholded'] = (df['diff'] > threshold)
+df['highlight'] = (df['thresholded'] == True) & (df['thresholded'].shift(1) == False)
 
 print(df.info())
 print(df)
 
+# this isolates the points where the weight increases, but not when it drops back down again.
+highlights = df[df['highlight']][['datetime', 'weight']]
+
+print(highlights)
+
 # Type hinting. Not sure if this is kosher or not.
 fig1: Figure
-fig1, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, sharex='all', )
-fig1.set_size_inches(8, 11)
+fig1, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, sharex='all')
+fig1.set_size_inches(8, 9)
 
 ax1.grid(b=True, which='major', color='#666666', linestyle='-')
 ax1.minorticks_on()
@@ -65,6 +72,8 @@ df.plot(y=['diff'], ax=ax3)
 
 # do this bit AFTER the plot
 ax3.axhline(threshold, linewidth=1, color='r')
+ymin, ymax = ax2.get_ylim()
+ax2.vlines(highlights['datetime'], linewidth=1, ymin=ymin, ymax=ymax-1, color='r')
 
 plt.tight_layout()
 plt.show()
