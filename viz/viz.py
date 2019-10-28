@@ -11,11 +11,14 @@ import matplotlib.ticker as ticker
 column_names = ['datestamp', 'date', 'time', 'weight']
 df = read_csv('../output/datr20190911.csv', names=column_names, parse_dates=True, infer_datetime_format=True)
 df = df.append(read_csv('../output/datr20190912.csv', names=column_names, parse_dates=True, infer_datetime_format=True))
-df = df.append(read_csv('../output/datr20190913.csv', names=column_names, parse_dates=True, infer_datetime_format=True))
-df = df.append(read_csv('../output/datr20190914.csv', names=column_names, parse_dates=True, infer_datetime_format=True))
+# df = df.append(read_csv('../output/datr20190913.csv', names=column_names, parse_dates=True, infer_datetime_format=True))
+# df = df.append(read_csv('../output/datr20190914.csv', names=column_names, parse_dates=True, infer_datetime_format=True))
 
+df.reset_index(drop=True, inplace=True)
+print(df)
 df['datetime'] = pd.to_datetime(df['datestamp'])
-df.set_index('datetime')
+df['index'] = df['datetime']
+df.set_index('index', inplace=True)
 del df['datestamp']
 del df['time']
 del df['date']
@@ -35,10 +38,9 @@ df['diff'] = df[small_window['name']].diff(periods=8)
 
 threshold = 300.0
 df['thresholded'] = (df['diff'] > threshold) * 1
-df['threshold'] = threshold # hacky workaround to get a horizontal line
-
 
 print(df.info())
+print(df)
 
 # Type hinting. Not sure if this is kosher or not.
 fig1: Figure
@@ -55,13 +57,11 @@ ax2.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
 ax3.grid(b=True, which='major', color='#666666', linestyle='-')
 ax3.minorticks_on()
 ax3.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
-# ax3.axhline(xmin=0, xmax=3, linewidth=2, color='r') # Why won't this work?!
-# ax3.axvline(pd.to_datetime("2019-09-26T03:08:52"))
-print(df.at[55, 'datetime'])
+# ax3.axhline(threshold, linewidth=2, color='r') # Why won't this work?!
 
-df.plot(x='datetime', y=[small_window['name'], 'thresholded'], secondary_y=['thresholded'], ax=ax1)
-df.plot(x='datetime', y=[small_window['name']], ax=ax2, figsize=(8, 11))
-df.plot(x='datetime', y=['diff', 'threshold'], ax=ax3)
+df.plot(y=[small_window['name'], 'thresholded'], secondary_y=['thresholded'], ax=ax1)
+df.plot(y=[small_window['name']], ax=ax2, figsize=(8, 11))
+df.plot(y=['diff'], ax=ax3)
 
 plt.tight_layout()
 plt.show()
