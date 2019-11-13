@@ -4,9 +4,12 @@
 #include "HX711.h"
 #include <RunningMedian.h> // https://github.com/RobTillaart/Arduino/tree/master/libraries/RunningMedian
 
-// For i2s realtime clock
+// For i2c realtime clock
 #include <Wire.h> 
 #include "RTClib.h"
+
+// For the i2c proximity sensor
+#include "Adafruit_VCNL4010.h"
 
 // Clock setup. Doesn't mention pins because uses default 21/22 on ESP32.
 RTC_DS3231 rtc;
@@ -26,6 +29,7 @@ HX711 scale;
 
 EnergyMonitor emon1;
 
+Adafruit_VCNL4010 vcnl;
 
 RunningMedian medianFilteredWeight(8);
 RunningMedian medianFilterInterval(6);
@@ -114,6 +118,14 @@ void setup() {
 
   emon1.current(14, 111.1);
 
+  if (! vcnl.begin()){
+    Serial.println("Sensor not found :(");
+    while (1);
+  }
+  
+  Serial.println("Found VCNL4010");
+  vcnl.setLEDcurrent(20);
+  
   sd_simpleInit();
 
 //  testMeasurementSpeed();
@@ -137,13 +149,22 @@ void loop() {
 
     double irms = emon1.calcIrms(1480)*230;
     rtc_serialPrintTime(currentTime, false);
+
+    int ambient_light = vcnl.readAmbient();
+    int proximity = vcnl.readProximity();
+   
     Serial.print(millis());
     Serial.print("\t| measured:\t");
     Serial.print(lastMeasuredWeight, 1);
     Serial.print("g\t| filtered:\t");
     Serial.print(filteredWeight);
     Serial.print("g\t| power:\t");
-    Serial.println(irms);
+    Serial.print(irms);
+    Serial.print("\t| ambient:\t ");
+    Serial.print(ambient_light);
+    Serial.print("\t| Proximity:\t");
+    Serial.println(proximity);
+    
     sd_prepareFilenames();
 
     sd_logRegularValue();
