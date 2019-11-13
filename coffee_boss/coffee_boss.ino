@@ -1,3 +1,5 @@
+#include "EmonLib.h"                   // Include Emon Library
+
 // This is for the ADC that the scale attaches to.
 #include "HX711.h"
 #include <RunningMedian.h> // https://github.com/RobTillaart/Arduino/tree/master/libraries/RunningMedian
@@ -21,6 +23,9 @@ RTC_DS3231 rtc;
 const int LOADCELL_DOUT_PIN = 4;
 const int LOADCELL_SCK_PIN = 15;
 HX711 scale;
+
+EnergyMonitor emon1;
+
 
 RunningMedian medianFilteredWeight(8);
 RunningMedian medianFilterInterval(6);
@@ -107,6 +112,8 @@ void setup() {
     rtc_serialPrintTime(rtc.now());
   }
 
+  emon1.current(14, 111.1);
+
   sd_simpleInit();
 
 //  testMeasurementSpeed();
@@ -127,14 +134,16 @@ void loop() {
     
     medianFilterInterval.add(millis() - scaleLastReadTime);
     measurementInterval = medianFilterInterval.getMedian();
-    
+
+    double irms = emon1.calcIrms(1480)*230;
     rtc_serialPrintTime(currentTime, false);
     Serial.print(millis());
     Serial.print("\t| measured:\t");
     Serial.print(lastMeasuredWeight, 1);
     Serial.print("g\t| filtered:\t");
     Serial.print(filteredWeight);
-    Serial.println("g");
+    Serial.print("g\t| power:\t");
+    Serial.println(irms);
     sd_prepareFilenames();
 
     sd_logRegularValue();
