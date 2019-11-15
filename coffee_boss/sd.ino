@@ -76,6 +76,11 @@ void sd_printDirectory(File dir, int numTabs)
    }
 }
 
+void sd_logData(char *dateStr, char *timeStr, float weight, float current, float light, int proximity)
+{
+  return;
+}
+
 void sd_logRegularValue() {
 
   if (millis() > regularLogLastTime + regularLogInterval) {
@@ -97,7 +102,14 @@ void sd_logRegularValue() {
       regularDataFile.print(timeString);
       regularDataFile.print(',');
 
-      regularDataFile.println(lastMeasuredWeight);
+      regularDataFile.print(lastMeasuredWeight);
+      regularDataFile.print(',');
+      regularDataFile.print(lastMeasuredCurrent);
+      regularDataFile.print(',');
+      regularDataFile.print(lastMeasuredAmbientLight);
+      regularDataFile.print(',');
+      regularDataFile.println(lastMeasuredProximity);
+
       regularDataFile.close();
     }
     else {
@@ -163,12 +175,16 @@ void sd_logChangeValue() {
   }
 }
 
-void sd_prepareFilenames() {
+void sd_prepareTimeAndDateStrings(DateTime currentTime, char *timeStringName, char *dateStringName)
+{
+  sprintf(timeStringName, "%02u:%02u:%02u", currentTime.hour(), currentTime.minute(), currentTime.second());
+  sprintf(dateStringName, "%04u-%02u-%02u", currentTime.year(), currentTime.month(), currentTime.day());
+}
+
+void sd_prepareFilenames(DateTime currentTime, char *filenameRegularName, char * filenameChangeName) {
   
-  sprintf(todayFilenameRegular, "/datr%04u%02u%02u.csv", currentTime.year(), currentTime.month(), currentTime.day());
-  sprintf(todayFilenameChange, "/datc%04u%02u%02u.csv", currentTime.year(), currentTime.month(), currentTime.day());
-  sprintf(dateString, "%04u-%02u-%02u", currentTime.year(), currentTime.month(), currentTime.day());
-  sprintf(timeString, "%02u:%02u:%02u", currentTime.hour(), currentTime.minute(), currentTime.second());
+  sprintf(filenameRegularName, "/datr%04u%02u%02u.csv", currentTime.year(), currentTime.month(), currentTime.day());
+  sprintf(filenameChangeName, "/datc%04u%02u%02u.csv", currentTime.year(), currentTime.month(), currentTime.day());
 
 //  Serial.print("todayFilenameRegular: ");
 //  Serial.println(todayFilenameRegular);

@@ -80,6 +80,17 @@ char todayFilenameChange[18];
 char dateString[11];
 char timeString[9];
 
+const int CURRENT_THRESHOLD = 40000;
+float lastMeasuredCurrent = 0.0;
+float lastDisplayedCurrent = 0.0;
+
+const int PROXIMITY_THRESHOLD = 6000;
+int lastMeasuredProximity = 0;
+int lastMeasuredAmbientLight = 0;
+int lastDisplayedProximity = 0;
+int lastDisplayedAmbientLight = 0;
+
+
 void setup() {
   Serial.begin(57600);
   Serial.println("\n\n\nCoffee Boss is going to BOSS your COFFEE.");
@@ -135,7 +146,7 @@ void setup() {
 
 
 void loop() {
-  
+
   if (millis() > scaleLastReadTime + scaleReadInterval) {
     currentTime = rtc.now();
     lastMeasuredWeight = scale.get_units(1);
@@ -147,35 +158,39 @@ void loop() {
     medianFilterInterval.add(millis() - scaleLastReadTime);
     measurementInterval = medianFilterInterval.getMedian();
 
-    double irms = emon1.calcIrms(1480)*230;
+    lastMeasuredCurrent = emon1.calcIrms(1480)*230;
+    lastMeasuredAmbientLight = vcnl.readAmbient();
+    lastMeasuredProximity = vcnl.readProximity();
+
     rtc_serialPrintTime(currentTime, false);
 
-    int ambient_light = vcnl.readAmbient();
-    int proximity = vcnl.readProximity();
-   
     Serial.print(millis());
     Serial.print("\t| measured:\t");
     Serial.print(lastMeasuredWeight, 1);
     Serial.print("g\t| filtered:\t");
     Serial.print(filteredWeight);
     Serial.print("g\t| power:\t");
-    Serial.print(irms);
+    Serial.print(lastMeasuredCurrent);
     Serial.print("\t| ambient:\t ");
-    Serial.print(ambient_light);
+    Serial.print(lastMeasuredAmbientLight);
     Serial.print("\t| Proximity:\t");
-    Serial.println(proximity);
+    Serial.println(lastMeasuredProximity);
     
-    sd_prepareFilenames();
+    sd_prepareFilenames(currentTime, todayFilenameRegular, todayFilenameChange);
+    sd_prepareTimeAndDateStrings(currentTime, timeString, dateString);
+
+    sd_logData(dateString, timeString, lastMeasuredWeight, lastMeasuredCurrent, lastMeasuredAmbientLight, lastMeasuredProximity);
 
     sd_logRegularValue();
     sd_logChangeValue();
 
-    lcd_updateDisplay();    
     scaleLastReadTime = millis();
     if ((int)filteredWeight != (int)lastFilteredWeight) {
       lastMeasuredWeight = filteredWeight;
     }
   }
+  
+  lcd_updateDisplay();  
 }
 
 
