@@ -11,7 +11,7 @@ void lcd_displayWeight(float weight) {
   lcd.setTextSize(2);
   lcd.setCursor(10, 50);
   lcd.print("Weight:");
-  lcd.setCursor(200, 50);
+  lcd.setCursor(150, 50);
   lcd.print(weight, 0);
   lcd.print("g      ");
 }
@@ -20,7 +20,7 @@ void lcd_displayCurrent(float current) {
   lcd.setTextSize(2);
   lcd.setCursor(10, 80);
   lcd.print("Current:");
-  lcd.setCursor(200, 80);
+  lcd.setCursor(150, 80);
   lcd.print(current, 0);
   lcd.print("      ");
 }
@@ -29,7 +29,7 @@ void lcd_displayLight(int light) {
   lcd.setTextSize(2);
   lcd.setCursor(10, 110);
   lcd.print("Light:");
-  lcd.setCursor(200, 110);
+  lcd.setCursor(150, 110);
   lcd.print(light);
   lcd.print("      ");
 }
@@ -38,7 +38,7 @@ void lcd_displayProximity(int proximity) {
   lcd.setTextSize(2);
   lcd.setCursor(10, 140);
   lcd.print("Proximity:");
-  lcd.setCursor(200, 140);
+  lcd.setCursor(150, 140);
   lcd.print(proximity);
   lcd.print("      ");
 }
@@ -98,9 +98,9 @@ void lcd_updateDisplay() {
     lcd_displayMeasurementInterval();    
   }
   
-  if ((int)lastDisplayedCurrent != (int)lastMeasuredCurrent) {
-    lcd_displayCurrent(lastMeasuredCurrent);
-    lastDisplayedCurrent = lastMeasuredCurrent;
+  if ((int)lastDisplayedCurrent != (int)filteredCurrent) {
+    lcd_displayCurrent(filteredCurrent);
+    lastDisplayedCurrent = filteredCurrent;
     lcd_displayHeaterStatus();
   }
   

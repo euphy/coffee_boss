@@ -83,6 +83,8 @@ char timeString[9];
 const int HEATER_CURRENT_THRESHOLD = 10000;
 float lastMeasuredCurrent = 0.0;
 float lastDisplayedCurrent = 0.0;
+RunningMedian medianCurrent(8);
+float filteredCurrent = 0.0;
 
 const int PROXIMITY_THRESHOLD = 6000;
 int lastMeasuredProximity = 0;
@@ -165,6 +167,8 @@ void loop() {
     measurementInterval = medianFilterInterval.getMedian();
 
     lastMeasuredCurrent = emon1.calcIrms(1480)*230;
+    medianCurrent.add(lastMeasuredCurrent);
+    filteredCurrent = medianCurrent.getMedian();
     lastMeasuredAmbientLight = vcnl.readAmbient();
     lastMeasuredProximity = vcnl.readProximity();
 
@@ -203,12 +207,12 @@ void loop() {
 }
 
 void senseHeaterState() {
-  if ((lastMeasuredCurrent > HEATER_CURRENT_THRESHOLD) && !heaterRunning) {
+  if ((filteredCurrent > HEATER_CURRENT_THRESHOLD) && !heaterRunning) {
     heaterStartedTime = rtc.now();
     sd_prepareTimeString(heaterStartedTime, heaterTimeString);
     heaterRunning = true;
   }
-  else if ((lastMeasuredCurrent < HEATER_CURRENT_THRESHOLD) && heaterRunning) {
+  else if ((filteredCurrent < HEATER_CURRENT_THRESHOLD) && heaterRunning) {
     heaterStoppedTime = rtc.now();
     sd_prepareTimeString(heaterStoppedTime, heaterTimeString);
     heaterRunning = false;
