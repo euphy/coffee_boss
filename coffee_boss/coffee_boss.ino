@@ -80,7 +80,7 @@ char todayFilenameChange[18];
 char dateString[11];
 char timeString[9];
 
-const int CURRENT_THRESHOLD = 40000;
+const int HEATER_CURRENT_THRESHOLD = 10000;
 float lastMeasuredCurrent = 0.0;
 float lastDisplayedCurrent = 0.0;
 
@@ -89,6 +89,12 @@ int lastMeasuredProximity = 0;
 int lastMeasuredAmbientLight = 0;
 int lastDisplayedProximity = 0;
 int lastDisplayedAmbientLight = 0;
+
+DateTime heaterStartedTime = 0L;
+DateTime heaterStoppedTime = 0L;
+char heaterTimeString[9];
+boolean heaterRunning = false;
+
 
 
 void setup() {
@@ -177,9 +183,12 @@ void loop() {
     Serial.println(lastMeasuredProximity);
     
     sd_prepareFilenames(currentTime, todayFilenameRegular, todayFilenameChange);
-    sd_prepareTimeAndDateStrings(currentTime, timeString, dateString);
+    sd_prepareTimeString(currentTime, timeString);
+    sd_prepareDateString(currentTime, dateString);
 
     sd_logData(dateString, timeString, lastMeasuredWeight, lastMeasuredCurrent, lastMeasuredAmbientLight, lastMeasuredProximity);
+
+    senseHeaterState();
 
     sd_logRegularValue();
     sd_logChangeValue();
@@ -193,6 +202,19 @@ void loop() {
   lcd_updateDisplay();  
 }
 
+void senseHeaterState() {
+  if ((lastMeasuredCurrent > HEATER_CURRENT_THRESHOLD) && !heaterRunning) {
+    heaterStartedTime = rtc.now();
+    sd_prepareTimeString(heaterStartedTime, heaterTimeString);
+    heaterRunning = true;
+  }
+  else if ((lastMeasuredCurrent < HEATER_CURRENT_THRESHOLD) && heaterRunning) {
+    heaterStoppedTime = rtc.now();
+    sd_prepareTimeString(heaterStoppedTime, heaterTimeString);
+    heaterRunning = false;
+    scale.tare();
+  }
+}
 
 void testMeasurementSpeed() {
   /*

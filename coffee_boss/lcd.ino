@@ -8,7 +8,7 @@ void lcd_init() {
 }
 
 void lcd_displayWeight(float weight) {
-  lcd.setTextSize(3);
+  lcd.setTextSize(2);
   lcd.setCursor(10, 50);
   lcd.print("Weight:");
   lcd.setCursor(200, 50);
@@ -17,28 +17,28 @@ void lcd_displayWeight(float weight) {
 }
 
 void lcd_displayCurrent(float current) {
-  lcd.setTextSize(3);
-  lcd.setCursor(10, 90);
+  lcd.setTextSize(2);
+  lcd.setCursor(10, 80);
   lcd.print("Current:");
-  lcd.setCursor(200, 90);
+  lcd.setCursor(200, 80);
   lcd.print(current, 0);
   lcd.print("      ");
 }
 
 void lcd_displayLight(int light) {
-  lcd.setTextSize(3);
-  lcd.setCursor(10, 130);
+  lcd.setTextSize(2);
+  lcd.setCursor(10, 110);
   lcd.print("Light:");
-  lcd.setCursor(200, 130);
+  lcd.setCursor(200, 110);
   lcd.print(light);
   lcd.print("      ");
 }
 
 void lcd_displayProximity(int proximity) {
-  lcd.setTextSize(3);
-  lcd.setCursor(10, 170);
+  lcd.setTextSize(2);
+  lcd.setCursor(10, 140);
   lcd.print("Proximity:");
-  lcd.setCursor(200, 170);
+  lcd.setCursor(200, 140);
   lcd.print(proximity);
   lcd.print("      ");
 }
@@ -49,6 +49,44 @@ void lcd_displayMeasurementInterval() {
   lcd.print("Measurement rate ");
   lcd.print(1000.0/(float)measurementInterval, 2);
   lcd.print("hz     ");
+}
+
+void lcd_displayHeaterStatus() {
+  lcd.setTextSize(2);
+  lcd.setCursor(10, 170);
+  
+  if (heaterRunning) {
+//    lcd.setTextColor(TFT_WHITE, TFT_RED);
+    TimeSpan timeSinceHeaterTurnedOn = rtc.now()-heaterStartedTime;
+      
+    lcd.print("Heater on for ");
+    lcd.print(timeSinceHeaterTurnedOn.totalseconds());
+    lcd.print("s             ");
+  }
+  else {
+//    lcd.setTextColor(TFT_WHITE, TFT_GREEN);
+    TimeSpan timeSinceHeaterTurnedOff = rtc.now()-heaterStoppedTime;
+    lcd.print("Coffee made ");
+    if (timeSinceHeaterTurnedOff.days() > 0) {
+      lcd.print(timeSinceHeaterTurnedOff.days());
+      lcd.print(" days ");
+    }
+    if (timeSinceHeaterTurnedOff.hours() > 0) {
+      lcd.print(timeSinceHeaterTurnedOff.hours());
+      lcd.print("h ");
+    }
+    if (timeSinceHeaterTurnedOff.minutes() > 0) {
+      lcd.print(timeSinceHeaterTurnedOff.minutes());
+      lcd.print("m ");
+    }
+    if (timeSinceHeaterTurnedOff.seconds() > 0) {
+      lcd.print(timeSinceHeaterTurnedOff.seconds());
+      lcd.print("s ");
+    }
+    lcd.print("ago            ");
+  }
+  
+  lcd.setTextColor(TFT_WHITE, TFT_BLACK);    
 }
 
 void lcd_updateDisplay() {
@@ -63,6 +101,7 @@ void lcd_updateDisplay() {
   if ((int)lastDisplayedCurrent != (int)lastMeasuredCurrent) {
     lcd_displayCurrent(lastMeasuredCurrent);
     lastDisplayedCurrent = lastMeasuredCurrent;
+    lcd_displayHeaterStatus();
   }
   
   if ((int)lastDisplayedAmbientLight != (int)lastMeasuredAmbientLight) {

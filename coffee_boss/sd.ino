@@ -175,9 +175,12 @@ void sd_logChangeValue() {
   }
 }
 
-void sd_prepareTimeAndDateStrings(DateTime currentTime, char *timeStringName, char *dateStringName)
+void sd_prepareTimeString(DateTime currentTime, char *timeStringName)
 {
   sprintf(timeStringName, "%02u:%02u:%02u", currentTime.hour(), currentTime.minute(), currentTime.second());
+}
+void sd_prepareDateString(DateTime currentTime, char *dateStringName)
+{
   sprintf(dateStringName, "%04u-%02u-%02u", currentTime.year(), currentTime.month(), currentTime.day());
 }
 
