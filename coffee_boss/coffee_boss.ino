@@ -80,12 +80,13 @@ char todayFilenameChange[18];
 char dateString[11];
 char timeString[9];
 
-const int HEATER_CURRENT_THRESHOLD = 10000;
+const int HEATER_CURRENT_THRESHOLD = 40000;
 float lastMeasuredCurrent = 0.0;
 float lastDisplayedCurrent = 0.0;
 RunningMedian medianCurrent(8);
 float filteredCurrent = 0.0;
 
+boolean useProximitySensor = false;
 const int PROXIMITY_THRESHOLD = 6000;
 int lastMeasuredProximity = 0;
 int lastMeasuredAmbientLight = 0;
@@ -139,11 +140,14 @@ void setup() {
 
   if (! vcnl.begin()){
     Serial.println("Sensor not found :(");
-    while (1);
+    useProximitySensor = false;
+  }
+  else {
+    useProximitySensor = true;
+    Serial.println("Found VCNL4010");
+    vcnl.setLEDcurrent(20);
   }
   
-  Serial.println("Found VCNL4010");
-  vcnl.setLEDcurrent(20);
   
   sd_simpleInit();
 
@@ -169,8 +173,11 @@ void loop() {
     lastMeasuredCurrent = emon1.calcIrms(1480)*230;
     medianCurrent.add(lastMeasuredCurrent);
     filteredCurrent = medianCurrent.getMedian();
-    lastMeasuredAmbientLight = vcnl.readAmbient();
-    lastMeasuredProximity = vcnl.readProximity();
+
+    if (useProximitySensor) {
+      lastMeasuredAmbientLight = vcnl.readAmbient();
+      lastMeasuredProximity = vcnl.readProximity();
+    }
 
     rtc_serialPrintTime(currentTime, false);
 
