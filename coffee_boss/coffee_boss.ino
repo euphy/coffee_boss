@@ -28,6 +28,7 @@ const int LOADCELL_SCK_PIN = 15;
 HX711 scale;
 
 EnergyMonitor emon1;
+const int CURRENT_SENSOR_PIN = 14;
 
 Adafruit_VCNL4010 vcnl;
 
@@ -104,10 +105,6 @@ void setup() {
   Serial.println("\n\n\nCoffee Boss is going to BOSS your COFFEE.");
 
   lcd_init();
-  // This is the file name used to store the touch coordinate
-  // calibration data. Cahnge the name to start a new calibration.
-  #define CALIBRATION_FILE "/PolargraphCalData" // TouchCalData3  
-
 
   // Setup scale
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
@@ -135,7 +132,7 @@ void setup() {
     rtc_serialPrintTime(rtc.now());
   }
 
-  emon1.current(14, 111.1);
+  emon1.current(CURRENT_SENSOR_PIN, 111.1);
 
   if (! vcnl.begin()){
     Serial.println("Sensor not found :(");
