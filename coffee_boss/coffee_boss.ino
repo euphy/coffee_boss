@@ -21,6 +21,7 @@ RTC_DS3231 rtc;
 #include <SD.h>
 #include <TFT_eSPI.h> // Hardware-specific library
 
+#include <MFRC522.h>
 
 // HX711 circuit wiring
 const int LOADCELL_DOUT_PIN = 4;
@@ -31,6 +32,12 @@ EnergyMonitor emon1;
 const int CURRENT_SENSOR_PIN = 14;
 
 Adafruit_VCNL4010 vcnl;
+
+const int RFID_RST_PIN = 16;
+const int RFID_SS_PIN = 27;
+String uidString = "";
+MFRC522 mfrc522(RFID_SS_PIN, RFID_RST_PIN);  // Create MFRC522 instance
+
 
 RunningMedian medianFilteredWeight(8);
 RunningMedian medianFilterInterval(6);
@@ -148,6 +155,12 @@ void setup() {
   
   sd_simpleInit();
 
+  Serial.println("Setting up RFID reader");
+  mfrc522.PCD_Init();   // Init MFRC522
+  delay(4);       // Optional delay. Some board do need more time after init to be ready, see Readme
+  mfrc522.PCD_DumpVersionToSerial();  // Show details of PCD - MFRC522 Card Reader details
+
+
 //  testMeasurementSpeed();
 //  testMeasurementSpeed();
 //  testMeasurementSpeed();
@@ -156,6 +169,27 @@ void setup() {
 
 void loop() {
 
+  if (mfrc522.PICC_IsNewCardPresent()) {
+    if (mfrc522.PICC_ReadCardSerial()) {
+    
+      // UID
+      Serial.print(F("Card UID:"));
+      
+      for (byte i = 0; i < mfrc522.uid.size; i++) {
+        if(mfrc522.uid.uidByte[i] < 0x10) 
+          uidString.concat(" 0");
+        else 
+          uidString.concat(" ");
+        
+        uidString += String(mfrc522.uid.uidByte[i], HEX);
+      }
+      Serial.println(uidString);
+    
+    }
+    delay(1000);
+  }
+  uidString = "";
+  
   if (millis() > scaleLastReadTime + scaleReadInterval) {
     currentTime = rtc.now();
     lastMeasuredWeight = scale.get_units(1);

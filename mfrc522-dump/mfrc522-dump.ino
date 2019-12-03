@@ -37,7 +37,7 @@
 #include <MFRC522.h>
 
 #define RST_PIN         4          // Configurable, see typical pin layout above
-#define SS_PIN          33         // Configurable, see typical pin layout above
+#define SS_PIN          16         // Configurable, see typical pin layout above
 
 String uidString = "";
   
