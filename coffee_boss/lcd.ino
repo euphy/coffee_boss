@@ -125,8 +125,10 @@ void lcd_showUserSummary(String uidString, String username, int displayDuration)
   lcd.fillScreen(TFT_WHITE);
   lcd.setTextDatum(BC_DATUM);
   lcd.setTextSize(4);
-  lcd.setCursor(160, 60);
+  lcd.setCursor(20, 60);
   lcd.print(uidString);
+  lcd.setCursor(20, 120);
+  lcd.print(username);
   delay(displayDuration);
   lcd_prepareScreenForDataDisplay();
 }

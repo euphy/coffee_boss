@@ -35,7 +35,7 @@ void rfid_checkForCard() {
     Serial.println(".");
 
     // show a summary of the users activity on the LCD for a few seconds
-    lcd_showUserSummary(uidString, username, 6000);
+    lcd_showUserSummary(uidString, username, 4000);
 
   }
   else

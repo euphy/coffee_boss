@@ -204,12 +204,13 @@ void sd_prepareFilenames(DateTime currentTime, char *filenameRegularName, char *
 
 String sd_getUsernameForUid(String uid) {
   usernamesDataFile = SD.open(filenameUsernames, FILE_READ);
-  boolean username;
+  String username = "";
   if (usernamesDataFile) {
     Serial.print("Opened ");
     Serial.println(filenameUsernames);
     // look through for a line starting with the value of uid
     
     changeDataFile.close();
-  }  
+  }
+  return username;
 }
