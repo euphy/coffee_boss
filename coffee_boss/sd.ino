@@ -184,10 +184,11 @@ void sd_prepareDateString(DateTime currentTime, char *dateStringName)
   sprintf(dateStringName, "%04u-%02u-%02u", currentTime.year(), currentTime.month(), currentTime.day());
 }
 
-void sd_prepareFilenames(DateTime currentTime, char *filenameRegularName, char * filenameChangeName) {
+void sd_prepareFilenames(DateTime currentTime, char *filenameRegularName, char * filenameChangeName, char * filenameUsersName) {
   
   sprintf(filenameRegularName, "/datr%04u%02u%02u.csv", currentTime.year(), currentTime.month(), currentTime.day());
   sprintf(filenameChangeName, "/datc%04u%02u%02u.csv", currentTime.year(), currentTime.month(), currentTime.day());
+  sprintf(filenameUsersName, "/datu%04u%02u%02u.csv", currentTime.year(), currentTime.month(), currentTime.day());
 
 //  Serial.print("todayFilenameRegular: ");
 //  Serial.println(todayFilenameRegular);
@@ -199,4 +200,17 @@ void sd_prepareFilenames(DateTime currentTime, char *filenameRegularName, char *
 //  Serial.println(timeString);
 //  Serial.print(".");
 
+}
+
+String sd_getUsernameForUid(String uid) {
+  usernamesDataFile = SD.open(filenameUsernames, FILE_READ);
+  String username = "";
+  if (usernamesDataFile) {
+    Serial.print("Opened ");
+    Serial.println(filenameUsernames);
+    // look through for a line starting with the value of uid
+    
+    changeDataFile.close();
+  }
+  return username;
 }

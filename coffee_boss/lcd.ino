@@ -1,6 +1,10 @@
 void lcd_init() {
   lcd.init();
   lcd.setRotation(3);
+  lcd_prepareScreenForDataDisplay();
+}
+
+void lcd_prepareScreenForDataDisplay() {
   lcd.setTextDatum(BC_DATUM);
   lcd.setTextColor(TFT_WHITE, TFT_BLACK);
   lcd.fillScreen(TFT_BLACK);
@@ -113,4 +117,18 @@ void lcd_updateDisplay() {
     lcd_displayProximity(lastMeasuredProximity);
     lastDisplayedProximity = lastMeasuredProximity;
   }  
+}
+
+void lcd_showUserSummary(String uidString, String username, int displayDuration) {
+  Serial.println("Showing summary");
+  lcd.setTextColor(TFT_BLACK, TFT_WHITE);
+  lcd.fillScreen(TFT_WHITE);
+  lcd.setTextDatum(BC_DATUM);
+  lcd.setTextSize(4);
+  lcd.setCursor(20, 60);
+  lcd.print(uidString);
+  lcd.setCursor(20, 120);
+  lcd.print(username);
+  delay(displayDuration);
+  lcd_prepareScreenForDataDisplay();
 }

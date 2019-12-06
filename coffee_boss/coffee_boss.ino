@@ -11,9 +11,6 @@
 // For the i2c proximity sensor
 #include "Adafruit_VCNL4010.h"
 
-// Clock setup. Doesn't mention pins because uses default 21/22 on ESP32.
-RTC_DS3231 rtc;
-
 // SD Card setup.
 #include "FS.h"
 #include "SPIFFS.h"
@@ -21,25 +18,30 @@ RTC_DS3231 rtc;
 #include <SD.h>
 #include <TFT_eSPI.h> // Hardware-specific library
 
+// NFC peripheral
 #include <PN532_I2C.h>
 #include <PN532.h>
 #include <NfcAdapter.h>
 
-PN532_I2C pn532i2c(Wire);
-PN532 nfc(pn532i2c);
+EnergyMonitor emon1;
+const int CURRENT_SENSOR_PIN = 14;
 
 // HX711 circuit wiring
 const int LOADCELL_DOUT_PIN = 4;
 const int LOADCELL_SCK_PIN = 15;
 HX711 scale;
 
-EnergyMonitor emon1;
-const int CURRENT_SENSOR_PIN = 14;
+// Clock setup. Doesn't mention pins because uses default 21/22 on ESP32.
+RTC_DS3231 rtc;
 
+// proximity sensor
 Adafruit_VCNL4010 vcnl;
 
+// RFID reader
+PN532_I2C pn532i2c(Wire);
+PN532 nfc(pn532i2c);
 String uidString = "";
-boolean useNfc = true;
+boolean useNfc = false;
 
 RunningMedian medianFilteredWeight(8);
 RunningMedian medianFilterInterval(6);
@@ -59,6 +61,9 @@ boolean logChangeReadings = true;
 const int sdChipSelectPin = 25;
 File regularDataFile;
 File changeDataFile;
+File usersDataFile;
+File usernamesDataFile;
+
 boolean cardPresent = false;
 boolean cardInit = false;
 
@@ -87,6 +92,8 @@ int measurementInterval = 0;
 DateTime currentTime;
 char todayFilenameRegular[18];
 char todayFilenameChange[18];
+char todayFilenameUsers[18];
+char filenameUsernames[18] = "usernames.csv";
 char dateString[11];
 char timeString[9];
 
@@ -130,7 +137,6 @@ void setup() {
     Serial.println("RTC is started");
   } else {
     Serial.println("RTC couldn't be found!");
-    while (1); 
   }
 
   if (rtc.lostPower()) {
@@ -147,38 +153,43 @@ void setup() {
   if (! vcnl.begin()){
     Serial.println("Sensor not found :(");
     useProximitySensor = false;
-    while (1);
   }
   else {
     useProximitySensor = true;
     Serial.println("Found VCNL4010");
     vcnl.setLEDcurrent(20);
   }
-  
-  
+    
   sd_simpleInit();
 
   Serial.println("Setting up RFID reader");
   nfc.begin();
+
   uint32_t versiondata = nfc.getFirmwareVersion();
   if (versiondata) {
+    Serial.println("Found RFID reader board");
     useNfc = true;
     // Got ok data, print it out!
-    Serial.print("Found chip PN5"); Serial.println((versiondata>>24) & 0xFF, HEX); 
-    Serial.print("Firmware ver. "); Serial.print((versiondata>>16) & 0xFF, DEC); 
-    Serial.print('.'); Serial.println((versiondata>>8) & 0xFF, DEC);
+    Serial.print("Found chip PN5"); 
+    Serial.println((versiondata>>24) & 0xFF, HEX); 
+    Serial.print("Firmware ver. "); 
+    Serial.print((versiondata>>16) & 0xFF, DEC); 
+    Serial.print('.'); 
+    Serial.println((versiondata>>8) & 0xFF, DEC);
     
     // Set the max number of retry attempts to read from a card
     // This prevents us from waiting forever for a card, which is
     // the default behaviour of the PN532.
-    nfc.setPassiveActivationRetries(0xFF);
+    nfc.setPassiveActivationRetries(0x4);
     
     // configure board to read RFID tags
-    nfc.SAMConfig();    
-  } else {
+    nfc.SAMConfig();
+  }
+  else {
     Serial.print("Didn't find PN53x board");
     useNfc = false;
-  }  
+  }
+  
 
 //  testMeasurementSpeed();
 //  testMeasurementSpeed();
@@ -188,33 +199,8 @@ void setup() {
 
 void loop() {
 
-  boolean success;
-  uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
-  uint8_t uidLength;                        // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
-  
-  // Wait for an ISO14443A type cards (Mifare, etc.).  When one is found
-  // 'uid' will be populated with the UID, and uidLength will indicate
-  // if the uid is 4 bytes (Mifare Classic) or 7 bytes (Mifare Ultralight)
-  success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, &uid[0], &uidLength);
-  
-  if (success) {
-    Serial.println("Found a card!");
-    Serial.print("UID Length: ");Serial.print(uidLength, DEC);Serial.println(" bytes");
-    Serial.print("UID Value: ");
-    for (uint8_t i=0; i < uidLength; i++) 
-    {
-      Serial.print(" 0x");Serial.print(uid[i], HEX); 
-    }
-    Serial.println("");
-    // Wait 1 second before continuing
-    delay(1000);
-  }
-  else
-  {
-    // PN532 probably timed out waiting for a card
-    Serial.println("Timed out waiting for a card");
-  }
-  
+  rfid_checkForCard();
+
   if (millis() > scaleLastReadTime + scaleReadInterval) {
     currentTime = rtc.now();
     lastMeasuredWeight = scale.get_units(1);
@@ -249,7 +235,7 @@ void loop() {
     Serial.print("\t| Proximity:\t");
     Serial.println(lastMeasuredProximity);
     
-    sd_prepareFilenames(currentTime, todayFilenameRegular, todayFilenameChange);
+    sd_prepareFilenames(currentTime, todayFilenameRegular, todayFilenameChange, todayFilenameUsers);
     sd_prepareTimeString(currentTime, timeString);
     sd_prepareDateString(currentTime, dateString);
 
