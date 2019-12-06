@@ -21,7 +21,12 @@ RTC_DS3231 rtc;
 #include <SD.h>
 #include <TFT_eSPI.h> // Hardware-specific library
 
-#include <MFRC522.h>
+#include <PN532_I2C.h>
+#include <PN532.h>
+#include <NfcAdapter.h>
+
+PN532_I2C pn532i2c(Wire);
+PN532 nfc(pn532i2c);
 
 // HX711 circuit wiring
 const int LOADCELL_DOUT_PIN = 4;
@@ -33,11 +38,8 @@ const int CURRENT_SENSOR_PIN = 14;
 
 Adafruit_VCNL4010 vcnl;
 
-const int RFID_RST_PIN = 16;
-const int RFID_SS_PIN = 27;
 String uidString = "";
-MFRC522 mfrc522(RFID_SS_PIN, RFID_RST_PIN);  // Create MFRC522 instance
-
+boolean useNfc = true;
 
 RunningMedian medianFilteredWeight(8);
 RunningMedian medianFilterInterval(6);
@@ -145,6 +147,7 @@ void setup() {
   if (! vcnl.begin()){
     Serial.println("Sensor not found :(");
     useProximitySensor = false;
+    while (1);
   }
   else {
     useProximitySensor = true;
@@ -156,10 +159,26 @@ void setup() {
   sd_simpleInit();
 
   Serial.println("Setting up RFID reader");
-  mfrc522.PCD_Init();   // Init MFRC522
-  delay(4);       // Optional delay. Some board do need more time after init to be ready, see Readme
-  mfrc522.PCD_DumpVersionToSerial();  // Show details of PCD - MFRC522 Card Reader details
-
+  nfc.begin();
+  uint32_t versiondata = nfc.getFirmwareVersion();
+  if (versiondata) {
+    useNfc = true;
+    // Got ok data, print it out!
+    Serial.print("Found chip PN5"); Serial.println((versiondata>>24) & 0xFF, HEX); 
+    Serial.print("Firmware ver. "); Serial.print((versiondata>>16) & 0xFF, DEC); 
+    Serial.print('.'); Serial.println((versiondata>>8) & 0xFF, DEC);
+    
+    // Set the max number of retry attempts to read from a card
+    // This prevents us from waiting forever for a card, which is
+    // the default behaviour of the PN532.
+    nfc.setPassiveActivationRetries(0xFF);
+    
+    // configure board to read RFID tags
+    nfc.SAMConfig();    
+  } else {
+    Serial.print("Didn't find PN53x board");
+    useNfc = false;
+  }  
 
 //  testMeasurementSpeed();
 //  testMeasurementSpeed();
@@ -169,26 +188,32 @@ void setup() {
 
 void loop() {
 
-  if (mfrc522.PICC_IsNewCardPresent()) {
-    if (mfrc522.PICC_ReadCardSerial()) {
-    
-      // UID
-      Serial.print(F("Card UID:"));
-      
-      for (byte i = 0; i < mfrc522.uid.size; i++) {
-        if(mfrc522.uid.uidByte[i] < 0x10) 
-          uidString.concat(" 0");
-        else 
-          uidString.concat(" ");
-        
-        uidString += String(mfrc522.uid.uidByte[i], HEX);
-      }
-      Serial.println(uidString);
-    
+  boolean success;
+  uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
+  uint8_t uidLength;                        // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
+  
+  // Wait for an ISO14443A type cards (Mifare, etc.).  When one is found
+  // 'uid' will be populated with the UID, and uidLength will indicate
+  // if the uid is 4 bytes (Mifare Classic) or 7 bytes (Mifare Ultralight)
+  success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, &uid[0], &uidLength);
+  
+  if (success) {
+    Serial.println("Found a card!");
+    Serial.print("UID Length: ");Serial.print(uidLength, DEC);Serial.println(" bytes");
+    Serial.print("UID Value: ");
+    for (uint8_t i=0; i < uidLength; i++) 
+    {
+      Serial.print(" 0x");Serial.print(uid[i], HEX); 
     }
+    Serial.println("");
+    // Wait 1 second before continuing
     delay(1000);
   }
-  uidString = "";
+  else
+  {
+    // PN532 probably timed out waiting for a card
+    Serial.println("Timed out waiting for a card");
+  }
   
   if (millis() > scaleLastReadTime + scaleReadInterval) {
     currentTime = rtc.now();
