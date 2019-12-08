@@ -8,11 +8,12 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
 
-column_names = ['datestamp', 'date', 'time', 'weight']
-df = read_csv('../output/datr20190911.csv', names=column_names, parse_dates=True, infer_datetime_format=True)
-df = df.append(read_csv('../output/datr20190912.csv', names=column_names, parse_dates=True, infer_datetime_format=True))
-# df = df.append(read_csv('../output/datr20190913.csv', names=column_names, parse_dates=True, infer_datetime_format=True))
-# df = df.append(read_csv('../output/datr20190914.csv', names=column_names, parse_dates=True, infer_datetime_format=True))
+# column_names = ['datestamp', 'date', 'time', 'weight']
+column_names = ['datestamp', 'date', 'time', 'weight', 'current', 'light', 'proximity']
+df = read_csv('../output/datr20191205.csv', names=column_names, parse_dates=True, infer_datetime_format=True)
+df = df.append(read_csv('../output/datr20191206.csv', names=column_names, parse_dates=True, infer_datetime_format=True))
+df = df.append(read_csv('../output/datr20191204.csv', names=column_names, parse_dates=True, infer_datetime_format=True))
+# df = df.append(read_csv('../output/datr20191203.csv', names=column_names, parse_dates=True, infer_datetime_format=True))
 
 df.reset_index(drop=True, inplace=True)
 print(df)
@@ -29,6 +30,8 @@ events = 'events'
 
 df[small_window['name']] = df['weight'].rolling(small_window['size']).median()
 df[large_window['name']] = df['weight'].rolling(large_window['size']).median()
+
+df['current4'] = df['current'].rolling(4).median()
 
 print(df)
 # produce a series, based on the results of the window median filter,
@@ -65,7 +68,7 @@ ax3.grid(b=True, which='major', color='#666666', linestyle='-')
 ax3.minorticks_on()
 ax3.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
 
-df.plot(y=[small_window['name'], 'thresholded'], secondary_y=['thresholded'], ax=ax1)
+df.plot(y=[small_window['name'], 'thresholded', 'current4'], secondary_y=['thresholded'], ax=ax1)
 df.plot(y=[small_window['name']], ax=ax2)
 df.plot(y=['diff'], ax=ax3)
 
