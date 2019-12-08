@@ -1,4 +1,5 @@
-#include "EmonLib.h"                   // Include Emon Library
+// Include Emon Library
+#include "EmonLib.h"
 
 // This is for the ADC that the scale attaches to.
 #include "HX711.h"
@@ -48,8 +49,8 @@ RunningMedian medianFilterInterval(6);
 
 float scaleUnitValue = 22.062;
 
-long scaleReadInterval = 100L;
-long scaleLastReadTime = 0L;
+long sensorsReadInterval = 100L;
+long sensorsLastReadTime = 0L;
 long regularLogInterval = 2000L;
 long regularLogLastTime = 0L;
 
@@ -186,7 +187,7 @@ void setup() {
     nfc.SAMConfig();
   }
   else {
-    Serial.print("Didn't find PN53x board");
+    Serial.println("___ Didn't find PN53x board ___");
     useNfc = false;
   }
   
@@ -196,77 +197,18 @@ void setup() {
 //  testMeasurementSpeed();
 }
 
-
 void loop() {
 
   rfid_checkForCard();
-
-  if (millis() > scaleLastReadTime + scaleReadInterval) {
-    currentTime = rtc.now();
-    lastMeasuredWeight = scale.get_units(1);
-    
-    lastFilteredWeight = filteredWeight;
-    medianFilteredWeight.add((int)lastMeasuredWeight);
-    filteredWeight = medianFilteredWeight.getMedian();
-    
-    medianFilterInterval.add(millis() - scaleLastReadTime);
-    measurementInterval = medianFilterInterval.getMedian();
-
-    lastMeasuredCurrent = emon1.calcIrms(1480)*230;
-    medianCurrent.add(lastMeasuredCurrent);
-    filteredCurrent = medianCurrent.getMedian();
-
-    if (useProximitySensor) {
-      lastMeasuredAmbientLight = vcnl.readAmbient();
-      lastMeasuredProximity = vcnl.readProximity();
-    }
-
-    rtc_serialPrintTime(currentTime, false);
-
-    Serial.print(millis());
-    Serial.print("\t| measured:\t");
-    Serial.print(lastMeasuredWeight, 1);
-    Serial.print("g\t| filtered:\t");
-    Serial.print(filteredWeight);
-    Serial.print("g\t| power:\t");
-    Serial.print(lastMeasuredCurrent);
-    Serial.print("\t| ambient:\t ");
-    Serial.print(lastMeasuredAmbientLight);
-    Serial.print("\t| Proximity:\t");
-    Serial.println(lastMeasuredProximity);
-    
-    sd_prepareFilenames(currentTime, todayFilenameRegular, todayFilenameChange, todayFilenameUsers);
-    sd_prepareTimeString(currentTime, timeString);
-    sd_prepareDateString(currentTime, dateString);
-
-    sd_logData(dateString, timeString, lastMeasuredWeight, lastMeasuredCurrent, lastMeasuredAmbientLight, lastMeasuredProximity);
-
-    senseHeaterState();
-
-    sd_logRegularValue();
-    sd_logChangeValue();
-
-    scaleLastReadTime = millis();
-    if ((int)filteredWeight != (int)lastFilteredWeight) {
-      lastMeasuredWeight = filteredWeight;
-    }
+  
+  if (millis() > sensorsLastReadTime + sensorsReadInterval) {
+    sensors_measureWeight();
+    sensors_logWeight();
+    sensors_senseHeaterState();
+    sensorsLastReadTime = millis();
   }
   
   lcd_updateDisplay();  
-}
-
-void senseHeaterState() {
-  if ((filteredCurrent > HEATER_CURRENT_THRESHOLD) && !heaterRunning) {
-    heaterStartedTime = rtc.now();
-    sd_prepareTimeString(heaterStartedTime, heaterTimeString);
-    heaterRunning = true;
-  }
-  else if ((filteredCurrent < HEATER_CURRENT_THRESHOLD) && heaterRunning) {
-    heaterStoppedTime = rtc.now();
-    sd_prepareTimeString(heaterStoppedTime, heaterTimeString);
-    heaterRunning = false;
-    scale.tare();
-  }
 }
 
 void testMeasurementSpeed() {
