@@ -90,6 +90,10 @@ int lastDisplayedWeight = 0;
 int filteredWeight = 0;
 int measurementInterval = 0;
 
+DateTime startTime;
+DateTime runningTime;
+
+
 DateTime currentTime;
 char todayFilenameRegular[18];
 char todayFilenameChange[18];
@@ -111,8 +115,8 @@ int lastMeasuredAmbientLight = 0;
 int lastDisplayedProximity = 0;
 int lastDisplayedAmbientLight = 0;
 
-DateTime heaterStartedTime = 0L;
-DateTime heaterStoppedTime = 0L;
+DateTime heaterStartedTime;
+DateTime heaterStoppedTime;
 char heaterTimeString[9];
 boolean heaterRunning = false;
 
@@ -131,7 +135,17 @@ void setup() {
 
 
   // setup RTC 
-  Wire.begin();
+  boolean i2cBegan = Wire.begin();
+  
+  if (i2cBegan) {
+    Serial.println("I2C began.");
+  } else {
+    Serial.println("I2C failed to begin.");
+    uint8_t error = Wire.lastError();
+    Serial.println(error);
+    Serial.println(Wire.getErrorText(error));
+  }
+  
   boolean rtcBegun = rtc.begin();
 
   if (rtcBegun) {
@@ -141,13 +155,20 @@ void setup() {
   }
 
   if (rtc.lostPower()) {
+    Wire.available();
     Serial.println("RTC lost power, let's set the default time.");
     // following line sets the RTC to the date & time this sketch was compiled
-    rtc.adjust(DateTime(__DATE__, __TIME__));
+    DateTime startUp = DateTime(__DATE__, __TIME__);
+    rtc_serialPrintTime(startUp);
+    rtc.adjust(startUp);
+    rtc_serialPrintTime(rtc.now());
   } else {
     Serial.println("Picked up time from RTC: ");
     rtc_serialPrintTime(rtc.now());
   }
+
+  heaterStartedTime = rtc.now();
+  heaterStoppedTime = rtc.now();
 
   emon1.current(CURRENT_SENSOR_PIN, 111.1);
 
@@ -207,8 +228,8 @@ void loop() {
     sensors_senseHeaterState();
     sensorsLastReadTime = millis();
   }
-  
-  lcd_updateDisplay();  
+
+  lcd_updateDisplay();
 }
 
 void testMeasurementSpeed() {

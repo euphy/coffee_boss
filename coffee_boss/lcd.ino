@@ -47,6 +47,41 @@ void lcd_displayProximity(int proximity) {
   lcd.print("      ");
 }
 
+
+void lcd_displayTime(int light) {
+  lcd.setTextSize(2);
+  lcd.setCursor(10, 110);
+  lcd.print("Now:");
+  lcd.setCursor(150, 110);
+  lcd_printDateTime(rtc.now());
+  lcd.print("      ");
+}
+
+void lcd_printDateTime(DateTime t) {
+  lcd.print(t.year(), DEC);
+  lcd.print('/');
+  lcd.print(t.month(), DEC);
+  lcd.print('/');
+  lcd.print(t.day(), DEC);
+  lcd.print(' ');
+  lcd.print(t.hour(), DEC);
+  lcd.print(':');
+  lcd.print(t.minute(), DEC);
+  lcd.print(':');
+  lcd.print(t.second(), DEC);  
+}
+
+void lcd_printTimeSpan(TimeSpan &t) {
+  lcd.print(t.days(), DEC);
+  lcd.print('d ');
+  lcd.print(t.hours(), DEC);
+  lcd.print('h ');
+  lcd.print(t.minutes(), DEC);
+  lcd.print('m ');
+  lcd.print(t.seconds(), DEC);
+  lcd.print('s ');
+}
+
 void lcd_displayMeasurementInterval() {
   lcd.setTextSize(2);
   lcd.setCursor(10, 10);
@@ -65,7 +100,11 @@ void lcd_displayHeaterStatus() {
       
     lcd.print("Heater on for ");
     lcd.print(timeSinceHeaterTurnedOn.totalseconds());
-    lcd.print("s             ");
+    lcd.print("s             ");    
+    lcd.setCursor(10, 190);
+    lcd.setTextSize(1);
+    lcd.print("Since: ");
+    lcd_printTimeSpan(timeSinceHeaterTurnedOn);
   }
   else {
 //    lcd.setTextColor(TFT_WHITE, TFT_GREEN);
@@ -88,6 +127,17 @@ void lcd_displayHeaterStatus() {
       lcd.print("s ");
     }
     lcd.print("ago            ");
+    lcd.setCursor(10, 190);
+    lcd.setTextSize(1);
+    lcd.print("Since: ");
+    lcd_printTimeSpan(timeSinceHeaterTurnedOff);
+    lcd.setCursor(10, 198);
+    lcd.print("Heater last stopped: ");
+    lcd_printDateTime(heaterStoppedTime);   
+    lcd.setCursor(10, 206);
+    lcd.print("Heater last started: ");
+    lcd_printDateTime(heaterStartedTime);
+    lcd.setTextSize(2);
   }
   
   lcd.setTextColor(TFT_WHITE, TFT_BLACK);    
