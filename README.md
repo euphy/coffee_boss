@@ -11,6 +11,7 @@ I want to be able to tell drinkers what they should be contributing. I know the 
 how many cups each carafe supplies. Some cups are huge, some are tiny. The people with big cups get a great deal, the
 people with small cups subsidise them.
 
+Read more here: http://www.euphy.co.uk/tag/coffee-boss/
 
 ## The plan
 
