@@ -10,7 +10,7 @@
 #include "RTClib.h"
 
 // For the i2c proximity sensor
-#include "Adafruit_VCNL4010.h"
+//#include "Adafruit_VCNL4010.h"
 
 // SD Card setup.
 #include "FS.h"
@@ -36,7 +36,7 @@ HX711 scale;
 RTC_DS3231 rtc;
 
 // proximity sensor
-Adafruit_VCNL4010 vcnl;
+//Adafruit_VCNL4010 vcnl;
 
 // RFID reader
 PN532_I2C pn532i2c(Wire);
@@ -172,15 +172,15 @@ void setup() {
 
   emon1.current(CURRENT_SENSOR_PIN, 111.1);
 
-  if (! vcnl.begin()){
-    Serial.println("Sensor not found :(");
-    useProximitySensor = false;
-  }
-  else {
-    useProximitySensor = true;
-    Serial.println("Found VCNL4010");
-    vcnl.setLEDcurrent(20);
-  }
+//  if (! vcnl.begin()){
+//    Serial.println("Sensor not found :(");
+//    useProximitySensor = false;
+//  }
+//  else {
+//    useProximitySensor = true;
+//    Serial.println("Found VCNL4010");
+//    vcnl.setLEDcurrent(20);
+//  }
     
   sd_simpleInit();
 

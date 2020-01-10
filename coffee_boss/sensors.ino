@@ -15,10 +15,10 @@ void sensors_measureWeight() {
   medianCurrent.add(lastMeasuredCurrent);
   filteredCurrent = medianCurrent.getMedian();
 
-  if (useProximitySensor) {
-    lastMeasuredAmbientLight = vcnl.readAmbient();
-    lastMeasuredProximity = vcnl.readProximity();
-  }
+//  if (useProximitySensor) {
+//    lastMeasuredAmbientLight = vcnl.readAmbient();
+//    lastMeasuredProximity = vcnl.readProximity();
+//  }
 
   rtc_serialPrintTime(currentTime, false);
 
